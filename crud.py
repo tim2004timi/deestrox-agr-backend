@@ -39,6 +39,7 @@ class Chat(Base):
     archived = Column(Boolean, default=False)
     blocked = Column(Boolean, default=False)
     status = Column(String(16), default="ongoing") # ongoing, closed
+    is_awaiting_manager_confirmation = Column(Boolean, default=False)
 
 class Message(Base):
     __tablename__ = "messages"
