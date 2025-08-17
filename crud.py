@@ -96,7 +96,14 @@ async def create_chat(db: AsyncSession, uuid: str, ai: bool = True, name: str = 
         raise
 
 async def create_message(db: AsyncSession, chat_id: int, message: str, message_type: str, ai: bool = False):
-    new_message = Message(chat_id=chat_id, message=message, message_type=message_type, ai=ai)
+    from datetime import datetime, timezone
+    new_message = Message(
+        chat_id=chat_id, 
+        message=message, 
+        message_type=message_type, 
+        ai=ai,
+        created_at=datetime.now(timezone.utc)  # Explicitly set timestamp
+    )
     db.add(new_message)
     try:
         await db.commit()
@@ -227,7 +234,7 @@ async def get_chat_messages(db: AsyncSession, chat_id: int) -> List[Dict[str, An
     query = (
         select(Message)
         .where(Message.chat_id == chat_id)
-        .order_by(desc(Message.created_at)) # Keep ordering
+        .order_by(Message.created_at.asc()) # Chronological order: oldest first
         # Removed: .limit(limit)
         # Removed: .offset(offset)
     )

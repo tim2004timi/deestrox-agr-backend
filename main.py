@@ -567,7 +567,7 @@ async def create_message_endpoint(msg: MessageCreate, db: AsyncSession = Depends
         "content": db_msg.message,
         "message_type": db_msg.message_type,
         "ai": db_msg.ai,
-        "timestamp": db_msg.created_at.isoformat(),
+        "timestamp": db_msg.created_at.isoformat() if db_msg.created_at else None,
         "id": db_msg.id
     }
     await messages_manager.broadcast(json.dumps(message_for_frontend))
@@ -582,6 +582,13 @@ async def update_waiting(chat_id: int, data: WaitingUpdate, db: AsyncSession = D
     chat = await update_chat_waiting(db, chat_id, data.waiting)
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
+    # Отправляем обновление по WebSocket
+    update_message = {
+        "type": "chat_waiting_updated",
+        "chatId": str(chat_id),
+        "waiting": chat.waiting
+    }
+    await updates_manager.broadcast(json.dumps(update_message))
     return {"success": True, "chat": chat}
 
 class AIUpdate(BaseModel):
@@ -974,7 +981,7 @@ async def handle_message(message: Message):
                         # Format message for frontend
                         message_for_frontend = {
                             "type": "message",
-                            "chatId": chat.id,
+                            "chatId": str(chat.id),
                             "content": answer,
                             "message_type": "answer",
                             "ai": True,
